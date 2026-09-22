@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Collection</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f4f4;
+    margin: 0;
+    padding: 40px 20px;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 30px 40px 40px;
+    border-radius: 6px;
+  }
+  h1 { text-align: center; }
+  h2 { margin-top: 30px; }
+  .form-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .form-row input {
+    flex: 1;
+    min-width: 140px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  button {
+    padding: 10px 18px;
+    border: 1px solid #ccc;
+    background: #eee;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  button:hover { background: #ddd; }
+  #status { font-weight: bold; min-height: 20px; }
+  #status.error { color: #b00020; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+  }
+  th { background: #eee; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Movie Collection</h1>
+
+  <h2>Add Movie</h2>
+  <div class="form-row">
+    <input type="text" id="title" placeholder="Title">
+    <input type="text" id="genre" placeholder="Genre">
+    <input type="number" id="year" placeholder="Year">
+    <button id="addBtn">Add Movie</button>
+  </div>
+  <p id="status"></p>
+
+  <h2>Movies</h2>
+  <button id="loadBtn">Load Movies</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Genre</th>
+        <th>Year</th>
+      </tr>
+    </thead>
+    <tbody id="movieTableBody"></tbody>
+  </table>
+</div>
+
+<script>
+  const API_URL = '/api/movies';
+
+  const statusEl = document.getElementById('status');
+  const tableBody = document.getElementById('movieTableBody');
+
+  async function loadMovies() {
+    statusEl.textContent = '';
+    statusEl.className = '';
+    try {
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error('Failed to load movies');
+      const movies = await res.json();
+      renderMovies(movies);
+    } catch (err) {
+      statusEl.textContent = err.message;
+      statusEl.className = 'error';
+    }
+  }
+
+  function renderMovies(movies) {
+    tableBody.innerHTML = '';
+    movies.forEach(movie => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${movie.id}</td>
+        <td>${movie.title}</td>
+        <td>${movie.genre}</td>
+        <td>${movie.year}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+  }
+
+  async function addMovie() {
+    const title = document.getElementById('title').value.trim();
+    const genre = document.getElementById('genre').value.trim();
+    const year = document.getElementById('year').value.trim();
+
+    statusEl.textContent = '';
+    statusEl.className = '';
+
+    if (!title || !genre || !year) {
+      statusEl.textContent = 'Please fill in all fields.';
+      statusEl.className = 'error';
+      return;
+    }
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, genre, year })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to add movie');
+      }
+
+      statusEl.textContent = 'Movie added successfully';
+      statusEl.className = '';
+
+      document.getElementById('title').value = '';
+      document.getElementById('genre').value = '';
+      document.getElementById('year').value = '';
+
+      loadMovies();
+    } catch (err) {
+      statusEl.textContent = err.message;
+      statusEl.className = 'error';
+    }
+  }
+
+  document.getElementById('addBtn').addEventListener('click', addMovie);
+  document.getElementById('loadBtn').addEventListener('click', loadMovies);
+
+  // Load movies automatically on page load
+  loadMovies();
+</script>
+</body>
+</html>
